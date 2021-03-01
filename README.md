@@ -1,68 +1,39 @@
-# The problem
+# README.md
 
-One of the challenges Metomic helps companies with is to classify personal data. We'd like to help different companies classify similar data in the same way.
 
-To this end, we've taken inspiration from [this schema](https://www.w3.org/ns/dpv), and are offering an auto-complete style experience that will help a company enter the categories of data that they process.
+## Installation
 
-# The context
+`npm install `
 
-The data from the DPV is hierchical - any category can have children. E.g. `Password` is a (very small) category of data that lives under the `Authenticating` category, which in turn lives under the `Internal` category.
+## Execution
 
-We've pre-processed the schema file from the DPV into a list of comma-separated pairs (see `pairs.csv`) that represent parent-child relationships:
+`npm run` and then in a separate shell `curl http://localhost:8080/search/data-categories?q=P`
 
+Add clarity and pipe output through `jq`, e.g.
 ```
-...
-Internal , Authenticating
-Authenticating , PINCode
-Authenticating , Password
-Authenticating , Secret Text
-Internal , Preference
-Preference , Interest
-...
+curl http://localhost:8080/search/data-categories?q=A | jq .
 ```
 
-We've also prepared a visualisation of the data over here, which might aid understanding: https://affectionate-leakey-675a75.netlify.app/#opts=doc=0; (try searching for "Password")
+## Assumptions
 
+* Node/category names in the CSV input data are unique.
 
-# Your mission
-(should you choose to accept it)
+* Excepting root nodes, nodes are always introduced as children before use as a parent node.  This makes the DAG building a one-pass activity, with no re-parenting of nodes required.
 
-Our front-end developer wants to create an auto-complete experience that allows the user to search and select a category at any level. Here's the intended design:
+## Observations
 
-![example](example-usage.png "Example auto-complete experience")
+* There is some duplication in the input data. This is logged.
 
-On each keystroke in the input field, the front-end will request the results to be displayed in the auto-complete box.
+* The input data describes a DAG rather than a strict tree, as branches unify and a node can have many parent nodes.
 
-**Your goal is to create an endpoint that can power the search for this.**
+## Wish List
 
-How you do this is completely up to you. By way of example, a reasonable working solution might look something like:
+* Unit tests for `ClassDB.ts`. Integration tests for `main.ts`
 
-```
-> curl http://localhost:8080/search/data-categories?q=P
-{
-  "searchTerm": "P",
-  "results": ...
-}
-```
+* Replace the brute force string search in `main.ts`, use an n-ary tree index for search-terms (and perhaps npm has something to fill this gap).
 
-When you're happy with your solution, please add a simple README.md with
- 1) what you wanted to do but didnt have time to,
- 2) summarise what tradeoffs you made,
- 3) what you would do differently / better in retrospect
+* Though the two stages here (CSV -> DAG -> Table) works, I would like to investigate simplification of the algorithm to build the table of (category-name -> fully qualified category-name)
 
+* Serialising the path to a category by joining with `/` characters is arbitrary, and could more usefully be an array of string.
 
-## Things to be aware of
-- The format of the response you send is up to you (the front-end has not been built yet). You should aim to return the data in a format that the front-end dev can make use of easily
-- We don't expect heavy traffic to this API - current estimates cap at 1000 customers concurrently searching.
-- You should timebox this solution to a **MAXIMUM of 2 hours**. (A production-ready enterprise-grade cloud-deployed system is cool and all, we should be paying you for that :] )
-- This spec is vague, but the end result should be clear. You'll need to make some reasonable assumptions along the way.
-
-
-## Things we're looking for
-- The approach you take to solving the problem. What's important, what's not?
-- Code structure. Can other people work in your codebase?
-- The obvious one: does it work? :)
-
-# One more thing...
-
-There's no sample code in this project. If we've agreed a technology upfront, you know what to do. If not, the language / libraries you choose are completely up to you.
+* function `walk` and type `LeafHandler` in `ClassDB.ts` would have been nicer as an iterator/generator to iterate over the DAG leaves.
