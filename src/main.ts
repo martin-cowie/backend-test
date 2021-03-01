@@ -20,16 +20,16 @@ console.error(`Loaded ${Object.keys(pathsByName).length} unique categories from 
 // Take queries
 const app = express();
 app.get('/search/data-categories',  (req, res) => {
-    const q = req.query.q;
 
-    if (q === undefined) {
+    if (req.query.q === undefined) {
         res.status(500).send('absent query parameter: q');
         return;
     }
+    let q: string = req.query.q.toString().toLowerCase();
 
     // Brute force search - ew
     const reducer = (acc: any, [key, value]:[string, string]) => {
-        if (key.startsWith(q.toString())) {
+        if (key.toLowerCase().startsWith(q)) {
             acc[key] = value;
         }
         return acc;
